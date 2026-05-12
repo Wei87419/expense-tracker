@@ -1,0 +1,1109 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#10151f">
+  <meta name="color-scheme" content="dark">
+  <meta name="application-name" content="記帳本">
+  <meta name="apple-mobile-web-app-title" content="記帳本">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" id="app-manifest" href="">
+  <title>記帳本</title>
+  <style>
+    :root {
+      --bg: #0d1118;
+      --panel: #131a25;
+      --panel-strong: #182131;
+      --panel-soft: #101722;
+      --line: rgba(255, 255, 255, 0.1);
+      --line-strong: rgba(255, 255, 255, 0.18);
+      --text: #edf3fb;
+      --muted: #93a2b7;
+      --accent: #22c7a9;
+      --accent-strong: #16a085;
+      --income: #5dd17d;
+      --expense: #ff6b6b;
+      --warning: #f7b955;
+      --shadow: 0 18px 60px rgba(0, 0, 0, 0.34);
+      --radius: 8px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--bg);
+    }
+
+    body {
+      min-height: 100%;
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 18% 0%, rgba(34, 199, 169, 0.16), transparent 28rem),
+        radial-gradient(circle at 90% 10%, rgba(247, 185, 85, 0.1), transparent 24rem),
+        linear-gradient(160deg, #0d1118 0%, #111827 46%, #0a0d13 100%);
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .app {
+      width: min(1160px, 100%);
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 24px clamp(14px, 3vw, 28px) 36px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: end;
+      margin-bottom: 22px;
+    }
+
+    .brand {
+      min-width: 0;
+    }
+
+    .eyebrow {
+      margin: 0 0 6px;
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 3.45rem);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      max-width: 620px;
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.65;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .field {
+      display: grid;
+      gap: 7px;
+      min-width: 0;
+    }
+
+    .field label,
+    .field-label {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    input,
+    select {
+      width: 100%;
+      min-height: 44px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--text);
+      background: rgba(15, 22, 33, 0.88);
+      outline: none;
+      padding: 10px 12px;
+      transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: rgba(34, 199, 169, 0.75);
+      box-shadow: 0 0 0 3px rgba(34, 199, 169, 0.15);
+      background: #101827;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .metric {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(24, 33, 49, 0.95), rgba(15, 21, 32, 0.94));
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 800;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 8px;
+      font-size: clamp(1.35rem, 3vw, 2.1rem);
+      line-height: 1.1;
+      word-break: break-word;
+    }
+
+    .metric.income strong {
+      color: var(--income);
+    }
+
+    .metric.expense strong {
+      color: var(--expense);
+    }
+
+    .metric.balance strong.negative {
+      color: var(--expense);
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      width: min(420px, 100%);
+      padding: 5px;
+      margin: 0 0 16px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(10, 14, 21, 0.7);
+    }
+
+    .tab {
+      min-height: 40px;
+      border: 0;
+      border-radius: 6px;
+      color: var(--muted);
+      background: transparent;
+      font-weight: 800;
+    }
+
+    .tab.active {
+      color: var(--text);
+      background: linear-gradient(180deg, rgba(34, 199, 169, 0.22), rgba(34, 199, 169, 0.1));
+      box-shadow: inset 0 0 0 1px rgba(34, 199, 169, 0.28);
+    }
+
+    .main {
+      display: grid;
+      grid-template-columns: minmax(320px, 410px) minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(19, 26, 37, 0.9);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(24, 33, 49, 0.72);
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: 0;
+    }
+
+    .panel-body {
+      padding: 16px;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 13px;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      padding: 5px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(10, 14, 21, 0.58);
+    }
+
+    .segmented input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .segmented label {
+      display: grid;
+      place-items: center;
+      min-height: 42px;
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 0.92rem;
+      font-weight: 900;
+      user-select: none;
+      transition: background 0.16s ease, color 0.16s ease;
+    }
+
+    .segmented input:checked + label {
+      color: var(--text);
+      background: var(--panel-strong);
+      box-shadow: inset 0 0 0 1px var(--line-strong);
+    }
+
+    .segmented .income-toggle:checked + label {
+      color: var(--income);
+    }
+
+    .segmented .expense-toggle:checked + label {
+      color: var(--expense);
+    }
+
+    .primary,
+    .secondary,
+    .danger {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 44px;
+      border-radius: var(--radius);
+      border: 1px solid transparent;
+      padding: 10px 13px;
+      color: var(--text);
+      font-weight: 900;
+      line-height: 1.1;
+      text-decoration: none;
+      transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+    }
+
+    .primary {
+      width: 100%;
+      background: linear-gradient(180deg, #2dd7b9, #14977f);
+      color: #06110e;
+    }
+
+    .secondary {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: var(--line);
+    }
+
+    .danger {
+      color: #ffd7d7;
+      background: rgba(255, 107, 107, 0.1);
+      border-color: rgba(255, 107, 107, 0.28);
+    }
+
+    .primary:hover,
+    .secondary:hover,
+    .danger:hover {
+      transform: translateY(-1px);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .record {
+      display: grid;
+      grid-template-columns: 44px minmax(0, 1fr) auto auto;
+      gap: 12px;
+      align-items: center;
+      min-height: 68px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(12, 17, 26, 0.76);
+    }
+
+    .record-icon {
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.06);
+      font-size: 1.25rem;
+    }
+
+    .record-main {
+      min-width: 0;
+    }
+
+    .record-title {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      min-width: 0;
+      color: var(--text);
+      font-weight: 900;
+    }
+
+    .record-title span {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .record-meta {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .amount {
+      color: var(--expense);
+      font-weight: 950;
+      white-space: nowrap;
+    }
+
+    .amount.income {
+      color: var(--income);
+    }
+
+    .icon-button {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .icon-button:hover {
+      color: #ffd7d7;
+      border-color: rgba(255, 107, 107, 0.4);
+      background: rgba(255, 107, 107, 0.12);
+    }
+
+    .empty {
+      display: grid;
+      place-items: center;
+      min-height: 180px;
+      border: 1px dashed var(--line-strong);
+      border-radius: var(--radius);
+      color: var(--muted);
+      text-align: center;
+      padding: 20px;
+    }
+
+    .stats-view {
+      display: none;
+    }
+
+    .stats-view.active,
+    .records-view.active {
+      display: block;
+    }
+
+    .records-view {
+      display: none;
+    }
+
+    .charts {
+      display: grid;
+      gap: 12px;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 116px minmax(0, 1fr) 118px;
+      gap: 12px;
+      align-items: center;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .bar-row:last-child {
+      border-bottom: 0;
+    }
+
+    .bar-label {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 900;
+    }
+
+    .bar-track {
+      position: relative;
+      overflow: hidden;
+      height: 16px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    .bar-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--accent), var(--warning));
+    }
+
+    .bar-value {
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .notice {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.5;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      clip-path: inset(50%);
+    }
+
+    @media (max-width: 820px) {
+      .app {
+        padding-top: 18px;
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+      }
+
+      .controls {
+        justify-content: stretch;
+      }
+
+      .controls .field {
+        flex: 1 1 150px;
+      }
+
+      .summary-grid,
+      .main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .summary-grid {
+        gap: 8px;
+      }
+
+      .metric {
+        padding: 12px;
+      }
+
+      .two-col {
+        grid-template-columns: 1fr;
+      }
+
+      .panel-header {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .toolbar {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .secondary,
+      .danger {
+        width: 100%;
+      }
+
+      .record {
+        grid-template-columns: 42px minmax(0, 1fr) auto;
+      }
+
+      .record .icon-button {
+        grid-column: 3;
+      }
+
+      .amount {
+        grid-column: 2 / 4;
+        justify-self: start;
+      }
+
+      .bar-row {
+        grid-template-columns: 1fr;
+        gap: 7px;
+      }
+
+      .bar-value {
+        text-align: left;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <p class="eyebrow">Expense Tracker</p>
+        <h1>記帳本</h1>
+        <p class="subtitle">用月份和幣別整理收入、支出與分類比例，資料只存在這台裝置的瀏覽器裡。</p>
+      </div>
+      <div class="controls" aria-label="篩選">
+        <div class="field">
+          <label for="monthFilter">月份</label>
+          <input id="monthFilter" type="month">
+        </div>
+        <div class="field">
+          <label for="currencySelect">幣別</label>
+          <select id="currencySelect">
+            <option value="TWD">TWD</option>
+            <option value="CAD">CAD</option>
+            <option value="JPY">JPY</option>
+            <option value="USD">USD</option>
+          </select>
+        </div>
+      </div>
+    </header>
+
+    <section class="summary-grid" aria-label="月統計">
+      <div class="metric income">
+        <span>收入</span>
+        <strong id="incomeTotal">TWD 0</strong>
+      </div>
+      <div class="metric expense">
+        <span>支出</span>
+        <strong id="expenseTotal">TWD 0</strong>
+      </div>
+      <div class="metric balance">
+        <span>結餘</span>
+        <strong id="balanceTotal">TWD 0</strong>
+      </div>
+    </section>
+
+    <nav class="tabs" aria-label="頁面">
+      <button class="tab active" type="button" data-view="records">記錄</button>
+      <button class="tab" type="button" data-view="stats">統計</button>
+    </nav>
+
+    <main class="main">
+      <section class="panel">
+        <div class="panel-header">
+          <h2>新增記錄</h2>
+        </div>
+        <div class="panel-body">
+          <form id="entryForm" class="form-grid" autocomplete="off">
+            <div>
+              <div class="field-label">類型</div>
+              <div class="segmented">
+                <input id="typeExpense" class="expense-toggle" type="radio" name="type" value="expense" checked>
+                <label for="typeExpense">支出</label>
+                <input id="typeIncome" class="income-toggle" type="radio" name="type" value="income">
+                <label for="typeIncome">收入</label>
+              </div>
+            </div>
+
+            <div class="two-col">
+              <div class="field">
+                <label for="amountInput">金額</label>
+                <input id="amountInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" required>
+              </div>
+              <div class="field">
+                <label for="dateInput">日期</label>
+                <input id="dateInput" type="date" required>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="categorySelect">分類</label>
+              <select id="categorySelect" required></select>
+            </div>
+
+            <div class="field">
+              <label for="noteInput">備注</label>
+              <input id="noteInput" type="text" maxlength="60" placeholder="例如：晚餐、薪水、車票">
+            </div>
+
+            <button class="primary" type="submit">＋ 新增</button>
+          </form>
+        </div>
+      </section>
+
+      <section class="panel records-view active" id="recordsView">
+        <div class="panel-header">
+          <h2>本月記錄</h2>
+          <div class="toolbar">
+            <button id="exportBtn" class="secondary" type="button">匯出 JSON</button>
+            <button id="importBtn" class="secondary" type="button">匯入備份</button>
+            <input id="importInput" class="sr-only" type="file" accept="application/json,.json">
+          </div>
+        </div>
+        <div class="panel-body">
+          <ul id="entryList" class="list"></ul>
+          <div id="emptyState" class="empty" hidden>這個月份還沒有記錄</div>
+          <p class="notice" id="currencyNotice"></p>
+        </div>
+      </section>
+
+      <section class="panel stats-view" id="statsView">
+        <div class="panel-header">
+          <h2>分類佔比</h2>
+        </div>
+        <div class="panel-body">
+          <div id="chartList" class="charts"></div>
+          <div id="chartEmpty" class="empty" hidden>這個月份還沒有支出資料</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "expense-tracker:v1";
+    const CATEGORIES = [
+      { id: "food", label: "餐飲", icon: "🍜" },
+      { id: "transport", label: "交通", icon: "🚇" },
+      { id: "housing", label: "住宿", icon: "🏠" },
+      { id: "shopping", label: "購物", icon: "🛍️" },
+      { id: "medical", label: "醫療", icon: "💊" },
+      { id: "entertainment", label: "娛樂", icon: "🎮" },
+      { id: "travel", label: "旅遊", icon: "✈️" },
+      { id: "other", label: "其他", icon: "📦" }
+    ];
+    const CURRENCIES = {
+      TWD: { symbol: "NT$", fraction: 0 },
+      CAD: { symbol: "C$", fraction: 2 },
+      JPY: { symbol: "¥", fraction: 0 },
+      USD: { symbol: "$", fraction: 2 }
+    };
+
+    const state = loadState();
+    const els = {
+      form: document.querySelector("#entryForm"),
+      amount: document.querySelector("#amountInput"),
+      note: document.querySelector("#noteInput"),
+      date: document.querySelector("#dateInput"),
+      category: document.querySelector("#categorySelect"),
+      currency: document.querySelector("#currencySelect"),
+      month: document.querySelector("#monthFilter"),
+      incomeTotal: document.querySelector("#incomeTotal"),
+      expenseTotal: document.querySelector("#expenseTotal"),
+      balanceTotal: document.querySelector("#balanceTotal"),
+      entryList: document.querySelector("#entryList"),
+      emptyState: document.querySelector("#emptyState"),
+      exportBtn: document.querySelector("#exportBtn"),
+      importBtn: document.querySelector("#importBtn"),
+      importInput: document.querySelector("#importInput"),
+      currencyNotice: document.querySelector("#currencyNotice"),
+      chartList: document.querySelector("#chartList"),
+      chartEmpty: document.querySelector("#chartEmpty"),
+      tabs: document.querySelectorAll(".tab"),
+      recordsView: document.querySelector("#recordsView"),
+      statsView: document.querySelector("#statsView"),
+      balanceTotal: document.querySelector("#balanceTotal")
+    };
+
+    init();
+
+    function init() {
+      installManifest();
+      populateCategories();
+      els.date.value = today();
+      els.month.value = state.settings.month || today().slice(0, 7);
+      els.currency.value = state.settings.currency || "TWD";
+      bindEvents();
+      render();
+    }
+
+    function installManifest() {
+      const iconSvg = [
+        "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'>",
+        "<rect width='512' height='512' rx='96' fill='#10151f'/>",
+        "<path d='M134 132h244c22 0 40 18 40 40v168c0 22-18 40-40 40H134c-22 0-40-18-40-40V172c0-22 18-40 40-40Z' fill='#22c7a9'/>",
+        "<path d='M122 204h268v34H122z' fill='#10151f' opacity='.9'/>",
+        "<circle cx='180' cy='304' r='28' fill='#10151f'/>",
+        "<path d='M244 282h112v28H244zM244 324h82v28h-82z' fill='#10151f'/>",
+        "</svg>"
+      ].join("");
+      const manifest = {
+        name: "記帳本",
+        short_name: "記帳",
+        start_url: ".",
+        scope: ".",
+        display: "standalone",
+        background_color: "#0d1118",
+        theme_color: "#10151f",
+        icons: [{
+          src: "data:image/svg+xml," + encodeURIComponent(iconSvg),
+          sizes: "512x512",
+          type: "image/svg+xml",
+          purpose: "any maskable"
+        }]
+      };
+      const manifestUrl = "data:application/manifest+json," + encodeURIComponent(JSON.stringify(manifest));
+      document.querySelector("#app-manifest").setAttribute("href", manifestUrl);
+    }
+
+    function populateCategories() {
+      els.category.innerHTML = CATEGORIES
+        .map((cat) => `<option value="${cat.id}">${cat.label}${cat.icon}</option>`)
+        .join("");
+    }
+
+    function bindEvents() {
+      els.form.addEventListener("submit", addEntry);
+      els.currency.addEventListener("change", () => {
+        state.settings.currency = els.currency.value;
+        saveState();
+        render();
+      });
+      els.month.addEventListener("change", () => {
+        state.settings.month = els.month.value;
+        saveState();
+        render();
+      });
+      els.exportBtn.addEventListener("click", exportBackup);
+      els.importBtn.addEventListener("click", () => els.importInput.click());
+      els.importInput.addEventListener("change", importBackup);
+      els.tabs.forEach((tab) => {
+        tab.addEventListener("click", () => switchView(tab.dataset.view));
+      });
+    }
+
+    function addEntry(event) {
+      event.preventDefault();
+      const amount = Number(els.amount.value);
+      const type = new FormData(els.form).get("type");
+      if (!Number.isFinite(amount) || amount <= 0) {
+        els.amount.focus();
+        return;
+      }
+
+      state.entries.unshift({
+        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+        type,
+        amount: roundMoney(amount),
+        note: els.note.value.trim(),
+        category: els.category.value,
+        date: els.date.value,
+        currency: els.currency.value,
+        createdAt: new Date().toISOString()
+      });
+      state.settings.month = els.date.value.slice(0, 7);
+      els.month.value = state.settings.month;
+      els.amount.value = "";
+      els.note.value = "";
+      els.amount.focus();
+      saveState();
+      render();
+    }
+
+    function deleteEntry(id) {
+      state.entries = state.entries.filter((entry) => entry.id !== id);
+      saveState();
+      render();
+    }
+
+    function render() {
+      const filtered = getFilteredEntries();
+      renderSummary(filtered);
+      renderEntries(filtered);
+      renderChart(filtered);
+      const otherCurrencyCount = state.entries.filter((entry) => {
+        return entry.date.startsWith(els.month.value) && entry.currency !== els.currency.value;
+      }).length;
+      els.currencyNotice.textContent = otherCurrencyCount
+        ? `此月份另有 ${otherCurrencyCount} 筆其他幣別記錄，切換幣別即可查看。`
+        : "";
+    }
+
+    function getFilteredEntries() {
+      const month = els.month.value;
+      const currency = els.currency.value;
+      return state.entries
+        .filter((entry) => entry.date.startsWith(month) && entry.currency === currency)
+        .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
+    }
+
+    function renderSummary(entries) {
+      const income = entries
+        .filter((entry) => entry.type === "income")
+        .reduce((sum, entry) => sum + entry.amount, 0);
+      const expense = entries
+        .filter((entry) => entry.type === "expense")
+        .reduce((sum, entry) => sum + entry.amount, 0);
+      const balance = income - expense;
+
+      els.incomeTotal.textContent = formatMoney(income);
+      els.expenseTotal.textContent = formatMoney(expense);
+      els.balanceTotal.textContent = formatMoney(balance);
+      els.balanceTotal.classList.toggle("negative", balance < 0);
+    }
+
+    function renderEntries(entries) {
+      els.entryList.innerHTML = "";
+      els.emptyState.hidden = entries.length > 0;
+
+      for (const entry of entries) {
+        const cat = getCategory(entry.category);
+        const li = document.createElement("li");
+        li.className = "record";
+        li.innerHTML = `
+          <div class="record-icon" aria-hidden="true">${cat.icon}</div>
+          <div class="record-main">
+            <div class="record-title">
+              <span>${escapeHtml(entry.note || cat.label)}</span>
+            </div>
+            <div class="record-meta">${cat.label} · ${entry.date}</div>
+          </div>
+          <div class="amount ${entry.type === "income" ? "income" : ""}">
+            ${entry.type === "income" ? "+" : "-"}${formatMoney(entry.amount)}
+          </div>
+          <button class="icon-button" type="button" title="刪除" aria-label="刪除 ${escapeAttribute(entry.note || cat.label)}">×</button>
+        `;
+        li.querySelector("button").addEventListener("click", () => deleteEntry(entry.id));
+        els.entryList.appendChild(li);
+      }
+    }
+
+    function renderChart(entries) {
+      const expenses = entries.filter((entry) => entry.type === "expense");
+      const total = expenses.reduce((sum, entry) => sum + entry.amount, 0);
+      const groups = CATEGORIES.map((cat) => {
+        const amount = expenses
+          .filter((entry) => entry.category === cat.id)
+          .reduce((sum, entry) => sum + entry.amount, 0);
+        return { ...cat, amount, percent: total ? (amount / total) * 100 : 0 };
+      }).filter((item) => item.amount > 0)
+        .sort((a, b) => b.amount - a.amount);
+
+      els.chartList.innerHTML = "";
+      els.chartEmpty.hidden = groups.length > 0;
+
+      for (const item of groups) {
+        const row = document.createElement("div");
+        row.className = "bar-row";
+        row.innerHTML = `
+          <div class="bar-label">${item.label}${item.icon}</div>
+          <div class="bar-track" aria-label="${item.label} ${item.percent.toFixed(1)}%">
+            <div class="bar-fill" style="width: ${item.percent}%"></div>
+          </div>
+          <div class="bar-value">${item.percent.toFixed(1)}% · ${formatMoney(item.amount)}</div>
+        `;
+        els.chartList.appendChild(row);
+      }
+    }
+
+    function switchView(view) {
+      els.tabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.view === view));
+      els.recordsView.classList.toggle("active", view === "records");
+      els.statsView.classList.toggle("active", view === "stats");
+    }
+
+    function exportBackup() {
+      const backup = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        settings: state.settings,
+        entries: state.entries
+      };
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `expense-tracker-backup-${today()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function importBackup(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const payload = JSON.parse(reader.result);
+          const entries = Array.isArray(payload) ? payload : payload.entries;
+          if (!Array.isArray(entries)) {
+            throw new Error("entries is missing");
+          }
+          const normalized = entries.map(normalizeEntry).filter(Boolean);
+          if (!normalized.length && entries.length) {
+            throw new Error("no valid entries");
+          }
+          if (!confirm("匯入會取代目前所有資料，確定繼續？")) {
+            return;
+          }
+          state.entries = normalized;
+          state.settings = {
+            currency: payload.settings?.currency || state.settings.currency || "TWD",
+            month: payload.settings?.month || today().slice(0, 7)
+          };
+          els.currency.value = state.settings.currency;
+          els.month.value = state.settings.month;
+          saveState();
+          render();
+        } catch (error) {
+          alert("匯入失敗，請確認檔案是有效的 JSON 備份。");
+        } finally {
+          els.importInput.value = "";
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function normalizeEntry(entry) {
+      const amount = Number(entry.amount);
+      const date = String(entry.date || "");
+      const type = entry.type === "income" ? "income" : "expense";
+      const currency = CURRENCIES[entry.currency] ? entry.currency : "TWD";
+      const category = CATEGORIES.some((cat) => cat.id === entry.category) ? entry.category : "other";
+      if (!Number.isFinite(amount) || amount <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return null;
+      }
+      return {
+        id: entry.id || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random())),
+        type,
+        amount: roundMoney(amount),
+        note: String(entry.note || "").slice(0, 60),
+        category,
+        date,
+        currency,
+        createdAt: entry.createdAt || new Date().toISOString()
+      };
+    }
+
+    function loadState() {
+      const fallback = {
+        entries: [],
+        settings: {
+          currency: "TWD",
+          month: today().slice(0, 7)
+        }
+      };
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (!saved || !Array.isArray(saved.entries)) return fallback;
+        return {
+          entries: saved.entries.map(normalizeEntry).filter(Boolean),
+          settings: {
+            currency: CURRENCIES[saved.settings?.currency] ? saved.settings.currency : "TWD",
+            month: saved.settings?.month || today().slice(0, 7)
+          }
+        };
+      } catch (error) {
+        return fallback;
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function getCategory(id) {
+      return CATEGORIES.find((cat) => cat.id === id) || CATEGORIES[CATEGORIES.length - 1];
+    }
+
+    function formatMoney(value) {
+      const currency = els.currency.value || state.settings.currency || "TWD";
+      const { fraction } = CURRENCIES[currency];
+      return new Intl.NumberFormat("zh-Hant", {
+        style: "currency",
+        currency,
+        currencyDisplay: "code",
+        minimumFractionDigits: fraction,
+        maximumFractionDigits: fraction
+      }).format(value);
+    }
+
+    function today() {
+      const now = new Date();
+      const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+      return local.toISOString().slice(0, 10);
+    }
+
+    function roundMoney(value) {
+      return Math.round(value * 100) / 100;
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#039;"
+      })[char]);
+    }
+
+    function escapeAttribute(value) {
+      return escapeHtml(value).replace(/`/g, "&#096;");
+    }
+  </script>
+</body>
+</html>
