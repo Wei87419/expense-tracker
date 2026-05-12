@@ -618,6 +618,10 @@
       width: min(520px, 100%);
     }
 
+    .fab-add {
+      display: none;
+    }
+
     .amount-entry {
       gap: 8px;
     }
@@ -711,6 +715,15 @@
       color: #ffd6d6;
       border-color: var(--expense);
       background: rgba(255, 107, 107, 0.28);
+    }
+
+    .form-actions {
+      display: grid;
+      gap: 8px;
+    }
+
+    .cancel-entry {
+      display: none;
     }
 
     @media (min-width: 821px) {
@@ -885,7 +898,12 @@
         order: 1;
       }
 
+      .app[data-entry-open="false"] .entry-panel,
       .app[data-view="stats"] .entry-panel {
+        display: none;
+      }
+
+      .app[data-entry-open="true"] .records-view {
         display: none;
       }
 
@@ -933,13 +951,13 @@
       }
 
       .segmented input:checked + label {
-        color: #0f0f0f;
+        color: #fff;
         background: var(--expense);
         box-shadow: none;
       }
 
       .segmented .income-toggle:checked + label {
-        color: #0f0f0f;
+        color: #101010;
         background: var(--income);
       }
 
@@ -967,6 +985,40 @@
         color: #0e0e0e;
         background: #f6f6f6;
         font-size: 0.96rem;
+      }
+
+      .form-actions {
+        grid-template-columns: 1fr auto;
+        align-items: center;
+      }
+
+      .cancel-entry {
+        display: inline-flex;
+        min-width: 82px;
+        min-height: 48px;
+        margin-top: 4px;
+        background: #1f1f1f;
+      }
+
+      .fab-add {
+        position: fixed;
+        right: max(20px, env(safe-area-inset-right));
+        bottom: max(22px, env(safe-area-inset-bottom));
+        z-index: 20;
+        place-items: center;
+        width: 56px;
+        height: 56px;
+        border: 0;
+        border-radius: 999px;
+        color: #101010;
+        background: #f6f6f6;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+        font-size: 1.5rem;
+        font-weight: 900;
+      }
+
+      .app[data-view="records"][data-entry-open="false"] .fab-add {
+        display: grid;
       }
 
       .list {
@@ -1093,7 +1145,10 @@
               <div id="categoryGrid" class="category-grid" role="radiogroup" aria-label="分類"></div>
             </div>
 
-            <button class="primary" type="submit">＋ 新增</button>
+            <div class="form-actions">
+              <button class="primary" type="submit">＋ 新增</button>
+              <button id="cancelEntryBtn" class="secondary cancel-entry" type="button">取消</button>
+            </div>
           </form>
         </div>
       </section>
@@ -1125,6 +1180,7 @@
       <button id="importBtn" class="secondary" type="button">⬆ 匯入備份</button>
       <input id="importInput" class="sr-only" type="file" accept="application/json,.json">
     </div>
+    <button id="openEntryBtn" class="fab-add" type="button" aria-label="新增明細">＋</button>
   </div>
 
   <script>
@@ -1150,6 +1206,8 @@
     const els = {
       form: document.querySelector("#entryForm"),
       app: document.querySelector(".app"),
+      openEntryBtn: document.querySelector("#openEntryBtn"),
+      cancelEntryBtn: document.querySelector("#cancelEntryBtn"),
       amount: document.querySelector("#amountInput"),
       amountPrefix: document.querySelector("#amountPrefix"),
       note: document.querySelector("#noteInput"),
@@ -1183,6 +1241,8 @@
       els.date.value = today();
       els.month.value = state.settings.month || today().slice(0, 7);
       els.currency.value = state.settings.currency || "TWD";
+      els.app.dataset.view = "records";
+      els.app.dataset.entryOpen = "false";
       bindEvents();
       render();
     }
@@ -1246,6 +1306,8 @@
       els.exportBtn.addEventListener("click", exportBackup);
       els.importBtn.addEventListener("click", () => els.importInput.click());
       els.importInput.addEventListener("change", importBackup);
+      els.openEntryBtn.addEventListener("click", () => openEntryForm());
+      els.cancelEntryBtn.addEventListener("click", () => closeEntryForm());
       els.categoryGrid.addEventListener("click", (event) => {
         const button = event.target.closest("[data-category]");
         if (!button) return;
@@ -1279,7 +1341,7 @@
       els.month.value = state.settings.month;
       els.amount.value = "";
       els.note.value = "";
-      els.amount.focus();
+      closeEntryForm();
       saveState();
       render();
     }
@@ -1399,9 +1461,20 @@
 
     function switchView(view) {
       els.app.dataset.view = view;
+      closeEntryForm();
       els.tabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.view === view));
       els.recordsView.classList.toggle("active", view === "records");
       els.statsView.classList.toggle("active", view === "stats");
+    }
+
+    function openEntryForm() {
+      switchView("records");
+      els.app.dataset.entryOpen = "true";
+      requestAnimationFrame(() => els.amount.focus());
+    }
+
+    function closeEntryForm() {
+      els.app.dataset.entryOpen = "false";
     }
 
     function exportBackup() {
